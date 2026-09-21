@@ -1,0 +1,328 @@
+<title>Invite Link Maker</title>
+<meta charset="utf-8">
+<style>
+:root{
+  --bg:#26191a;
+  --ink:#f7ece6;
+  --muted:#e6c9bd;
+  --accent:#d99a7a;
+  --card:#33221f;
+  --line:rgba(230,201,189,0.22);
+  --line-strong:rgba(230,201,189,0.45);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
+body{
+  font-family:'Jost',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding:32px 18px calc(40px + env(safe-area-inset-bottom,0px));
+  min-height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+h1,h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;margin:0;}
+.wrap{width:100%;max-width:480px;display:flex;flex-direction:column;gap:28px;}
+.header{text-align:center;display:flex;flex-direction:column;gap:6px;}
+.header .script{font-family:'Alex Brush',cursive;font-size:44px;color:#fffaf6;line-height:1;}
+.eyebrow{font-size:10.5px;letter-spacing:0.28em;text-transform:uppercase;color:var(--muted);}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;display:flex;flex-direction:column;gap:14px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+label{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);}
+input[type=text]{
+  background:rgba(0,0,0,0.18);
+  border:1px solid var(--line-strong);
+  border-radius:10px;
+  color:#fffaf6;
+  font-family:'Jost',sans-serif;
+  font-size:15px;
+  padding:12px 14px;
+  outline:none;
+}
+input[type=text]:focus{border-color:var(--accent);}
+input[type=text]::placeholder{color:rgba(247,236,230,0.32);}
+.hint{font-size:11.5px;color:rgba(230,201,189,0.65);line-height:1.5;}
+button{
+  font-family:'Jost',sans-serif;
+  font-size:12px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  border:1px solid var(--line-strong);
+  background:transparent;
+  color:#fffaf6;
+  padding:13px 20px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:all .15s;
+}
+button.primary{background:var(--accent);border-color:var(--accent);color:#2a1416;font-weight:600;}
+button.primary:hover{opacity:.9;}
+button:hover{background:rgba(230,201,189,0.1);}
+button:disabled{opacity:.35;cursor:default;}
+.result{
+  display:none;
+  border:1px solid var(--accent);
+  border-radius:12px;
+  padding:16px;
+  background:rgba(217,154,122,0.08);
+  flex-direction:column;
+  gap:10px;
+}
+.result.show{display:flex;}
+.result .url{
+  font-family:ui-monospace,Menlo,monospace;
+  font-size:12.5px;
+  word-break:break-all;
+  color:#fffaf6;
+  line-height:1.5;
+}
+.result .row{display:flex;gap:8px;}
+.result .row button{flex:1;}
+.list{display:flex;flex-direction:column;gap:10px;}
+.list-item{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.list-item .names{font-family:'Cormorant Garamond',serif;font-size:16px;color:#fffaf6;}
+.list-item .actions{display:flex;gap:6px;flex-shrink:0;}
+.list-item button{padding:7px 12px;font-size:10px;}
+.empty{font-size:12.5px;color:rgba(230,201,189,0.5);text-align:center;padding:14px 0;}
+.toast{
+  position:fixed;
+  bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:#fffaf6;
+  color:#2a1416;
+  font-size:12.5px;
+  font-family:'Jost',sans-serif;
+  padding:10px 18px;
+  border-radius:999px;
+  opacity:0;
+  transition:all .25s ease;
+  pointer-events:none;
+  white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@300;400;500;600&family=Alex+Brush&display=swap">
+
+<div class="wrap">
+  <div class="header">
+    <div class="eyebrow">Reda &amp; Weaam</div>
+    <div class="script">Invite Links</div>
+    <div class="eyebrow" style="font-size:9.5px;">Generate A Personal Link Per Guest</div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>Site Link (once)</label>
+      <input type="text" id="siteUrl" placeholder="e.g. reda-weaam.netlify.app">
+      <div class="hint" id="siteHint">لصقيه هون مرة وحدة، وبضل محفوظ بهالمتصفح.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>Guest Name(s)</label>
+      <input type="text" id="guestNames" placeholder="مثلاً: أحمد الحاج, سارة الحاج">
+      <div class="hint">إذا في أكتر من شخص بنفس الدعوة، افصلي بينهن بفاصلة.</div>
+    </div>
+    <button class="primary" id="genBtn">ولّد الرابط</button>
+
+    <div class="result" id="result">
+      <div class="url" id="resultUrl"></div>
+      <div class="row">
+        <button id="copyBtn">نسخ الرسالة</button>
+        <button id="waBtn">فتح بواتساب</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow" style="text-align:center;">الروابط المحفوظة</div>
+    <div class="list" id="savedList"></div>
+    <div class="empty" id="emptyMsg">لسا ما ولّدتي أي رابط.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var SITE_KEY = 'invite_site_url';
+  var LIST_KEY = 'invite_saved_links';
+
+  function safeGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function safeSet(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+
+  var siteInput = document.getElementById('siteUrl');
+  var namesInput = document.getElementById('guestNames');
+  var genBtn = document.getElementById('genBtn');
+  var result = document.getElementById('result');
+  var resultUrl = document.getElementById('resultUrl');
+  var copyBtn = document.getElementById('copyBtn');
+  var waBtn = document.getElementById('waBtn');
+  var savedList = document.getElementById('savedList');
+  var emptyMsg = document.getElementById('emptyMsg');
+  var toast = document.getElementById('toast');
+
+  var DEFAULT_SITE = 'https://reda.weaam.creatovex.com';
+  var savedSite = safeGet(SITE_KEY);
+  siteInput.value = savedSite || DEFAULT_SITE;
+
+  function normalizeSite(v){
+    v = (v || '').trim();
+    if (!v) return '';
+    if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+    return v.replace(/\/+$/, '');
+  }
+
+  function b64urlEncode(str){
+    var b64 = btoa(unescape(encodeURIComponent(str)));
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function buildLink(site, names){
+    var payload = names.length > 1 ? { names: names } : { name: names[0] };
+    var encoded = b64urlEncode(JSON.stringify(payload));
+    return site + '/?invite=' + encoded;
+  }
+
+  function buildMessage(names, url){
+    var greetName = names.join(' & ');
+    return 'Dear ' + greetName + ',\n\n' +
+      'You are cordially invited to the wedding of\n\n' +
+      '✨ Reda & Weaam ✨\n\n' +
+      'Tuesday, October 6, 2026 · 5:30 PM\n' +
+      'Saint Joseph Cathedral, Achrafieh\n\n' +
+      'Open your personal invitation:\n' +
+      '👉 ' + url + '\n\n' +
+      'We look forward to celebrating with you!\n\n' +
+      'With love,\n' +
+      'Reda & Weaam 💍';
+  }
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(function(){ toast.classList.remove('show'); }, 1800);
+  }
+
+  function loadList(){
+    try {
+      var raw = safeGet(LIST_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+
+  function saveList(list){
+    safeSet(LIST_KEY, JSON.stringify(list));
+  }
+
+  function renderList(){
+    var list = loadList();
+    savedList.innerHTML = '';
+    emptyMsg.style.display = list.length ? 'none' : 'block';
+    list.slice().reverse().forEach(function(item, idxFromEnd){
+      var realIndex = list.length - 1 - idxFromEnd;
+      var row = document.createElement('div');
+      row.className = 'list-item';
+      var namesLabel = document.createElement('div');
+      namesLabel.className = 'names';
+      namesLabel.textContent = item.names.join(' & ');
+      var actions = document.createElement('div');
+      actions.className = 'actions';
+
+      var copyRowBtn = document.createElement('button');
+      copyRowBtn.textContent = 'نسخ';
+      copyRowBtn.addEventListener('click', function(){ copyText(item.url); });
+
+      var delBtn = document.createElement('button');
+      delBtn.textContent = 'حذف';
+      delBtn.addEventListener('click', function(){
+        var l = loadList();
+        l.splice(realIndex, 1);
+        saveList(l);
+        renderList();
+      });
+
+      actions.appendChild(copyRowBtn);
+      actions.appendChild(delBtn);
+      row.appendChild(namesLabel);
+      row.appendChild(actions);
+      savedList.appendChild(row);
+    });
+  }
+
+  function copyText(text){
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function(){
+        showToast('انتسخ الرابط ✓');
+      }).catch(function(){ fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showToast('انتسخ الرابط ✓'); } catch(e){ showToast('ما قدرت انسخ، انسخيه يدوي'); }
+    document.body.removeChild(ta);
+  }
+
+  var lastUrl = '';
+  var lastNames = [];
+
+  genBtn.addEventListener('click', function(){
+    var site = normalizeSite(siteInput.value);
+    var namesRaw = namesInput.value.trim();
+    if (!site) { showToast('حطي رابط الموقع أول شي'); siteInput.focus(); return; }
+    if (!namesRaw) { showToast('حطي اسم المعزوم'); namesInput.focus(); return; }
+
+    safeSet(SITE_KEY, site);
+    var names = namesRaw.split(',').map(function(n){ return n.trim(); }).filter(Boolean);
+    var url = buildLink(site, names);
+    lastUrl = url;
+    lastNames = names;
+
+    resultUrl.textContent = url;
+    result.classList.add('show');
+
+    var list = loadList();
+    list.push({ names: names, url: url });
+    saveList(list);
+    renderList();
+
+    namesInput.value = '';
+    namesInput.focus();
+  });
+
+  copyBtn.addEventListener('click', function(){
+    if (lastUrl) copyText(buildMessage(lastNames, lastUrl));
+  });
+
+  waBtn.addEventListener('click', function(){
+    if (!lastUrl) return;
+    var msg = buildMessage(lastNames, lastUrl);
+    window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg), '_blank');
+  });
+
+  namesInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') genBtn.click();
+  });
+
+  renderList();
+})();
+</script>
