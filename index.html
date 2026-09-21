@@ -168,6 +168,13 @@ a:hover{opacity:.65;}
         <div class="rule" style="margin:6px 0;"></div>
         <div class="eyebrow" style="font-size:10px;">Number Of Invitees: <span id="guestCount">2</span></div>
         <div id="guestList" style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;margin-top:4px;"></div>
+        <div id="addGuestWrap" style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:8px;">
+          <button id="addGuestToggle" type="button" style="background:transparent;border:none;color:var(--muted);font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0;align-self:center;">+ Bringing Someone With You?</button>
+          <div id="addGuestForm" style="display:none;gap:8px;">
+            <input type="text" id="addGuestInput" placeholder="Guest's Full Name" style="flex:1;min-width:0;background:rgba(0,0,0,0.18);border:1px solid var(--line-strong);border-radius:8px;color:#fffaf6;font-family:'Jost',sans-serif;font-size:13px;padding:9px 12px;outline:none;">
+            <button id="addGuestBtn" type="button" style="flex-shrink:0;padding:9px 14px;font-family:'Jost',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;border:1px solid var(--line-strong);background:transparent;color:#fffaf6;cursor:pointer;">Add</button>
+          </div>
+        </div>
         <button id="confirmBtn" class="confirm-btn" style="max-width:340px;">Press To Confirm</button>
       </div>
     </section>
@@ -250,6 +257,45 @@ listEl.addEventListener('click', function (e) {
   btn.classList.add('on');
   updateConfirmState();
 });
+
+// Let the invited guest bring exactly one extra person along (a "+1"),
+// even though that person wasn't in the original invite link.
+var addGuestToggle = document.getElementById('addGuestToggle');
+var addGuestWrap = document.getElementById('addGuestWrap');
+var addGuestForm = document.getElementById('addGuestForm');
+var addGuestInput = document.getElementById('addGuestInput');
+var addGuestBtn = document.getElementById('addGuestBtn');
+
+addGuestToggle.addEventListener('click', function () {
+  var showing = addGuestForm.style.display === 'flex';
+  addGuestForm.style.display = showing ? 'none' : 'flex';
+  if (!showing) addGuestInput.focus();
+});
+
+function addExtraGuest() {
+  var name = addGuestInput.value.trim();
+  if (!name) { addGuestInput.focus(); return; }
+  var i = guestNames.length;
+  guestNames.push(name);
+  document.getElementById('guestCount').textContent = guestNames.length;
+
+  var row = document.createElement('div');
+  row.className = 'guest-row';
+  row.innerHTML =
+    '<div class="guest-name">' + name + ' <span style="opacity:.55;font-size:11px;">(+1)</span></div>' +
+    '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+      '<button class="rsvp-btn accept" data-i="' + i + '">Accept</button>' +
+      '<button class="rsvp-btn decline" data-i="' + i + '">Decline</button>' +
+    '</div>';
+  listEl.appendChild(row);
+
+  // Only one extra guest allowed per invite -- remove the "add" control now.
+  addGuestWrap.remove();
+  updateConfirmState();
+}
+
+addGuestBtn.addEventListener('click', addExtraGuest);
+addGuestInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') addExtraGuest(); });
 
 // Silently POST one row per guest to the linked Google Form/Sheet.
 // Uses independent fetch() requests (mode: 'no-cors') instead of a shared
