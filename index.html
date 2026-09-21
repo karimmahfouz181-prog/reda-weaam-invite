@@ -251,34 +251,24 @@ listEl.addEventListener('click', function (e) {
   updateConfirmState();
 });
 
-// Silently POST one row per guest to the linked Google Form/Sheet
-// via a hidden iframe, so nothing ever navigates away or opens a tab.
-var submitFrame = document.createElement('iframe');
-submitFrame.name = 'hidden-submit-frame';
-submitFrame.style.display = 'none';
-document.body.appendChild(submitFrame);
-
+// Silently POST one row per guest to the linked Google Form/Sheet.
+// Uses independent fetch() requests (mode: 'no-cors') instead of a shared
+// hidden iframe/form -- with a shared iframe, submitting a 2nd guest's form
+// cancels the 1st guest's still-in-flight navigation, so only the last
+// guest in a multi-guest invite would ever actually get saved. fetch()
+// requests are independent of each other, so every guest is saved.
 function submitGuestRow(name, attending) {
-  var form = document.createElement('form');
-  form.action = FORM_ACTION_URL;
-  form.method = 'POST';
-  form.target = 'hidden-submit-frame';
-
-  function addField(entryId, value) {
-    var input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = entryId;
-    input.value = value;
-    form.appendChild(input);
-  }
-  addField(ENTRY_NAME, name);
-  addField(ENTRY_ATTENDING, attending);
-  addField(ENTRY_GUESTS, '1');
-  addField(ENTRY_MESSAGE, '');
-
-  document.body.appendChild(form);
-  form.submit();
-  setTimeout(function () { form.remove(); }, 1000);
+  var body = new URLSearchParams();
+  body.append(ENTRY_NAME, name);
+  body.append(ENTRY_ATTENDING, attending);
+  body.append(ENTRY_GUESTS, '1');
+  body.append(ENTRY_MESSAGE, '');
+  return fetch(FORM_ACTION_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString()
+  }).catch(function () { /* no-cors: nothing meaningful to read anyway */ });
 }
 
 document.getElementById('confirmBtn').addEventListener('click', function () {
