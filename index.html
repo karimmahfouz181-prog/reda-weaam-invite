@@ -47,6 +47,8 @@ a:hover{opacity:.65;}
 .wrap:last-of-type .bg-img{-webkit-mask-image:linear-gradient(to bottom, transparent 0%, black 14%, black 100%);mask-image:linear-gradient(to bottom, transparent 0%, black 14%, black 100%);}
 .wrap:last-of-type .bg-shade{background:linear-gradient(180deg, #26191a 0%, rgba(38,20,21,0.15) 16%, rgba(38,20,21,0.1) 100%);}
 .wrap .content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%;}
+.wrap .content > *{opacity:0;transform:translateY(18px);transition:opacity .85s cubic-bezier(.22,.61,.36,1),transform .85s cubic-bezier(.22,.61,.36,1);}
+.wrap.in-view .content > *{opacity:1;transform:translateY(0);}
 .script-heading{font-family:'Alex Brush',cursive;font-weight:400;font-size:46px;line-height:1.15;color:#fffaf6;text-shadow:0 2px 14px rgba(0,0,0,0.5),0 1px 4px rgba(0,0,0,0.4);}
 .rsvp-heading{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:600;font-size:40px;letter-spacing:0.01em;line-height:1.2;color:#fffaf6;text-shadow:0 2px 14px rgba(0,0,0,0.55),0 1px 4px rgba(0,0,0,0.45);}
 .carousel{width:100%;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:0;padding:0 9%;scrollbar-width:none;}
@@ -304,8 +306,23 @@ function tickCountdown() {
 tickCountdown();
 setInterval(tickCountdown, 1000);
 
-// Dot scroll indicator
+// Fade in / fade out reveal animation, staggered per element, for every section
+// (this is what makes page 1 -> page 2 -- and every other transition -- cross-fade)
 var sections = document.querySelectorAll('section.wrap');
+sections.forEach(function (sec) {
+  var kids = sec.querySelector('.content').children;
+  Array.prototype.forEach.call(kids, function (el, i) {
+    el.style.transitionDelay = (i * 0.07) + 's';
+  });
+});
+var revealObserver = new IntersectionObserver(function (entries) {
+  entries.forEach(function (entry) {
+    entry.target.classList.toggle('in-view', entry.isIntersecting);
+  });
+}, { threshold: 0.45 });
+sections.forEach(function (sec) { revealObserver.observe(sec); });
+
+// Dot scroll indicator
 var dotsEl = document.getElementById('dots');
 sections.forEach(function () {
   var d = document.createElement('div');
